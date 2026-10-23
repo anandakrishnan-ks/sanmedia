@@ -1,122 +1,95 @@
+"use client";
+
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import imgIdea from "@/assets/story-idea.jpg";
-import imgFrame from "@/assets/story-frame.jpg";
-import imgProduction from "@/assets/story-production.jpg";
-import imgFilm from "@/assets/story-film.jpg";
-import { registerGsap, reducedMotion } from "./anim";
-
-const STAGES = [
-  { n: "01", title: "THE IDEA", quote: "Every film begins with a thought.", img: imgIdea },
-  { n: "02", title: "THE FRAME", quote: "We turn that thought into a visual language.", img: imgFrame },
-  { n: "03", title: "THE PRODUCTION", quote: "Every detail is planned. Every frame has a purpose.", img: imgProduction },
-  { n: "04", title: "THE FILM", quote: "Your story becomes something people remember.", img: imgFilm },
-];
+import { stages } from "@/content/stages";
 
 export function Story() {
-  const wrapRef = useRef<HTMLElement>(null);
-  const textRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const imgRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const barRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap || reducedMotion()) return;
-    registerGsap();
-
-    const texts = textRefs.current.filter((el): el is HTMLDivElement => Boolean(el));
-    const imgs = imgRefs.current.filter((el): el is HTMLDivElement => Boolean(el));
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: wrap,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.7,
-        },
-      });
-
-      // Stage 0 is visible from the start.
-      if (texts[0]) gsap.set(texts[0], { autoAlpha: 1 });
-      if (imgs[0]) gsap.set(imgs[0], { opacity: 1 });
-      gsap.set(texts.slice(1), { autoAlpha: 0 });
-      gsap.set(imgs.slice(1), { opacity: 0 });
-
-      STAGES.forEach((_, i) => {
-        if (i === 0) return;
-        const prevText = texts[i - 1];
-        const prevImg = imgs[i - 1];
-        const nextText = texts[i];
-        const nextImg = imgs[i];
-        if (!prevText || !prevImg || !nextText || !nextImg) return;
-        tl.to(prevText, { autoAlpha: 0, y: -50, duration: 0.2, ease: "power1.in" }, i - 0.25)
-          .to(prevImg, { opacity: 0, duration: 0.3, ease: "none" }, i - 0.25)
-          .fromTo(
-            nextText,
-            { autoAlpha: 0, y: 50 },
-            { autoAlpha: 1, y: 0, duration: 0.25, ease: "power1.out" },
-            i
-          )
-          .to(nextImg, { opacity: 1, duration: 0.35, ease: "none" }, i);
-      });
-
-      if (barRef.current) {
-        tl.fromTo(barRef.current, { scaleX: 0 }, { scaleX: 1, duration: STAGES.length, ease: "none" }, 0);
-      }
-    }, wrap);
-    return () => ctx.revert();
+    gsap.registerPlugin(ScrollTrigger);
+    const media = gsap.matchMedia();
+    media.add(
+      "(min-width: 1024px) and (min-height: 620px) and (prefers-reduced-motion: no-preference)",
+      () => {
+        const section = ref.current;
+        if (!section) return;
+        section.classList.add("process-cinematic");
+        const context = gsap.context(() => {
+          const images = gsap.utils.toArray<HTMLElement>(".process-image", section);
+          const texts = gsap.utils.toArray<HTMLElement>(".process-copy", section);
+          gsap.set(images.slice(1), { opacity: 0 });
+          gsap.set(texts.slice(1), { autoAlpha: 0 });
+          const timeline = gsap.timeline({
+            scrollTrigger: { trigger: section, start: "top top", end: "bottom bottom", scrub: 0.7 },
+          });
+          texts.forEach((text, index) => {
+            if (index === 0) return;
+            // Image and title move independently, matching the original film chapters.
+            timeline
+              .to(
+                texts[index - 1],
+                { autoAlpha: 0, y: -50, duration: 0.2, ease: "power1.in" },
+                index - 0.25,
+              )
+              .to(images[index - 1], { opacity: 0, duration: 0.3, ease: "none" }, index - 0.25)
+              .fromTo(
+                text,
+                { autoAlpha: 0, y: 50 },
+                { autoAlpha: 1, y: 0, duration: 0.25, ease: "power1.out" },
+                index,
+              )
+              .to(images[index], { opacity: 1, duration: 0.35, ease: "none" }, index);
+          });
+          timeline.fromTo(
+            ".process-progress-fill",
+            { scaleX: 0 },
+            { scaleX: 1, duration: texts.length, ease: "none" },
+            0,
+          );
+        }, section);
+        ScrollTrigger.refresh();
+        return () => {
+          context.revert();
+          section.classList.remove("process-cinematic");
+        };
+      },
+    );
+    return () => media.revert();
   }, []);
 
   return (
-    <section ref={wrapRef} id="story" className="relative h-[480vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-background">
-        {/* Stage imagery */}
-        {STAGES.map((s, i) => (
-          <div
-            key={s.n}
-            ref={(el) => {
-              imgRefs.current[i] = el;
-            }}
-            className="grain vignette absolute inset-0 will-change-opacity"
-          >
-            <img
-              src={s.img}
-              alt={s.title}
-              loading="lazy"
-              width={1536}
-              height={1024}
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-background/55" />
-          </div>
+    <section ref={ref} className="process-section" id="process" aria-label="Our filmmaking process">
+      <div className="process-sticky">
+        {stages.map((stage) => (
+          <article key={stage.n} className="process-stage">
+            <div className="process-image grain">
+              <Image
+                src={stage.img}
+                alt={stage.title.toLowerCase().replace("the ", "Filmmaking: ")}
+                fill
+                sizes="(min-width: 1024px) 100vw, (min-width: 700px) 50vw, 100vw"
+                placeholder="blur"
+                className="object-cover"
+              />
+              <div className="process-shade" />
+            </div>
+            <div className="process-copy">
+              <p className="meta">Chapter {stage.n} / 04</p>
+              <h2 className="display">{stage.title}</h2>
+              <p className="process-quote">{stage.quote}</p>
+            </div>
+          </article>
         ))}
-
-        {/* Stage text */}
-        <div className="relative z-10 flex h-full items-end">
-          <div className="mx-auto w-full max-w-[1500px] px-6 pb-24 lg:px-12">
-            {STAGES.map((s, i) => (
-              <div
-                key={s.n}
-                ref={(el) => {
-                  textRefs.current[i] = el;
-                }}
-                className="absolute bottom-24 left-6 lg:left-12"
-              >
-                <p className="meta text-foreground/60">{s.n}</p>
-                <h3 className="display mt-3 text-5xl text-foreground md:text-7xl">{s.title}</h3>
-                <p className="mt-4 max-w-md text-base font-light text-foreground/75 md:text-lg">
-                  {s.quote}
-                </p>
-              </div>
-            ))}
+        <div className="process-progress" aria-hidden="true">
+          <span className="meta">From first thought to final frame</span>
+          <div>
+            <div className="process-progress-fill" />
           </div>
-        </div>
-
-        {/* Progress */}
-        <div className="absolute bottom-10 left-6 right-6 z-10 h-px bg-foreground/15 lg:left-12 lg:right-12">
-          <div ref={barRef} className="h-full origin-left bg-foreground/80" />
+          <span className="meta">01 — 04</span>
         </div>
       </div>
     </section>

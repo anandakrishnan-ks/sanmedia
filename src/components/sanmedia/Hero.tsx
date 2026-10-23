@@ -1,105 +1,121 @@
+"use client";
+
 import { useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import heroImg from "@/assets/hero.jpg";
-import markWhite from "@/assets/sanmedia-mark-white.png.asset.json";
-import { registerGsap, reducedMotion } from "./anim";
+import heroImage from "@/assets/hero.jpg";
 
 export function Hero() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const introRef = useRef<HTMLDivElement>(null);
-  const filmRef = useRef<HTMLDivElement>(null);
-  const captionRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const intro = introRef.current;
-    const film = filmRef.current;
-    const caption = captionRef.current;
-    if (!section || !intro || !film || !caption || reducedMotion()) return;
-
-    registerGsap();
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.6,
-        },
-      });
-
-      tl.fromTo(
-        film,
-        { clipPath: "inset(18% 18% 18% 18%)", opacity: 0 },
-        { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, duration: 0.42, ease: "none" },
-        0
-      )
-        .fromTo(
-          film.querySelector("img"),
-          { scale: 1.22 },
-          { scale: 1.02, duration: 1, ease: "none" },
-          0
-        )
-        .to(
-          intro,
-          { opacity: 0, scale: 0.86, y: -60, filter: "blur(6px)", duration: 0.3, ease: "power1.in" },
-          0.18
-        )
-        .fromTo(
-          caption,
-          { opacity: 0, y: 24 },
-          { opacity: 1, y: 0, duration: 0.25, ease: "power1.out" },
-          0.62
-        );
-    }, section);
-    return () => ctx.revert();
+    gsap.registerPlugin(ScrollTrigger);
+    const media = gsap.matchMedia();
+    media.add(
+      "(min-width: 1024px) and (min-height: 660px) and (prefers-reduced-motion: no-preference)",
+      () => {
+        const section = ref.current;
+        if (!section) return;
+        section.classList.add("hero-cinematic");
+        const context = gsap.context(() => {
+          const timeline = gsap.timeline({
+            scrollTrigger: { trigger: section, start: "top top", end: "bottom bottom", scrub: 0.6 },
+          });
+          timeline
+            .fromTo(
+              ".hero-film",
+              { clipPath: "inset(18% 18% 18% 18%)", opacity: 0 },
+              {
+                clipPath: "inset(0% 0% 0% 0%)",
+                opacity: 1,
+                duration: 0.42,
+                ease: "none",
+              },
+              0,
+            )
+            .fromTo(
+              ".hero-film img",
+              { scale: 1.22 },
+              { scale: 1.02, duration: 1, ease: "none" },
+              0,
+            )
+            .to(
+              ".hero-intro",
+              {
+                autoAlpha: 0,
+                scale: 0.86,
+                y: -60,
+                filter: "blur(6px)",
+                duration: 0.3,
+                ease: "power1.in",
+              },
+              0.18,
+            )
+            .fromTo(
+              ".hero-caption",
+              { opacity: 0, y: 24 },
+              { opacity: 1, y: 0, duration: 0.25, ease: "power1.out" },
+              0.62,
+            );
+        }, section);
+        ScrollTrigger.refresh();
+        return () => {
+          context.revert();
+          section.classList.remove("hero-cinematic");
+        };
+      },
+    );
+    return () => media.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} id="top" className="relative h-[280vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-background">
-        {/* Cinematic production image, revealed by scroll */}
-        <div ref={filmRef} className="grain vignette absolute inset-0 will-change-transform">
-          <img
-            src={heroImg}
+    <section ref={ref} className="hero-section" aria-label="SANMEDIA film production">
+      <div className="hero-sticky">
+        <div className="hero-film">
+          <Image
+            src={heroImage}
             alt="SANMEDIA film set at night, camera crane in a beam of light"
-            width={1536}
-            height={1024}
-            className="h-full w-full object-cover will-change-transform"
-            fetchPriority="high"
+            fill
+            sizes="100vw"
+            preload
+            placeholder="blur"
+            className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/40" />
-          <div ref={captionRef} className="absolute bottom-10 left-6 opacity-0 lg:left-12">
-            <p className="meta text-foreground/70">Scene 01 — The Production</p>
-          </div>
+          <div className="hero-shade" />
         </div>
-
-        {/* Opening titles */}
-        <div
-          ref={introRef}
-          className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
-        >
-          <img
-            src={markWhite.url}
+        <div className="hero-intro">
+          <Image
+            src="/images/sanmedia-mark-white.png"
             alt=""
-            width={72}
-            height={72}
-            className="mb-8 h-14 w-14 object-contain md:h-20 md:w-20"
+            width={80}
+            height={80}
+            unoptimized
+            className="hero-mark"
           />
-          <h1 className="display text-[17vw] leading-none tracking-[0.04em] text-foreground md:text-[11vw]">
-            SANMEDIA
-          </h1>
-          <p className="mt-6 text-base font-light tracking-wide text-foreground/85 md:text-xl">
-            Films that make brands feel.
+          <p className="meta hero-eyebrow">Independent minds. Cinematic stories.</p>
+          <h1 className="display hero-title">SANMEDIA</h1>
+          <p className="hero-tagline">Films that make brands feel.</p>
+          <p className="meta hero-disciplines">
+            Film · Advertising · Production · Visual Storytelling
           </p>
-          <p className="meta mt-10 text-[10px] text-foreground/60">
-            Film • Advertising • Production • Visual Storytelling
-          </p>
+          <Link className="text-link hero-link" href="/work">
+            Explore our work
+            <ArrowUpRight size={17} aria-hidden="true" />
+          </Link>
         </div>
-
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-          <span className="meta text-[9px] text-foreground/40">Scroll</span>
+        <div className="hero-caption">
+          <p className="meta">Scene 01 — The Production</p>
+        </div>
+        <div className="hero-bottom site-container">
+          <span className="meta">Trivandrum, Kerala</span>
+          <a href="#work" className="meta">
+            Scroll to explore
+            <ArrowDown size={14} aria-hidden="true" />
+          </a>
+          <span className="meta hero-coordinate">Visual storytelling. With intent.</span>
         </div>
       </div>
     </section>

@@ -1,0 +1,61 @@
+/* Only the enhanced desktop section gets a runway; the default remains readable. */
+.services-section.services-cinematic {
+  height: 560svh;
+  padding-block: 0;
+  overflow: visible;
+}
+
+.services-cinematic .services-stage {
+  position: sticky;
+  top: 0;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  height: 100svh;
+  overflow: hidden;
+  padding-block: 90px 32px;
+}
+
+.services-cinematic .service-section-top {
+  margin-bottom: clamp(1rem, 3svh, 2.5rem);
+}
+
+.services-cinematic .service-row {
+  padding-block: clamp(0.5rem, 1.6svh, 1.25rem);
+}
+
+.services-cinematic .service-copy {
+  display: flex;
+}
+
+.services-cinematic .service-title {
+  font-size: clamp(1.5rem, min(3.8vw, 5.4svh), 4.5rem);
+  line-height: 1;
+}
+
+.services-cinematic .service-description {
+  margin-top: 0;
+}
+
+.services-cinematic .service-section-bottom {
+  margin-top: clamp(1rem, 3svh, 2.5rem);
+}
+
+.services-cinematic .service-image {
+  transition: none;
+}
+
+/* Preview controls override the timeline only until scrolling resumes. */
+.services-cinematic[data-service-preview] .service-row {
+  opacity: 0.18 !important;
+}
+
+.services-cinematic[data-service-preview] .service-image {
+  opacity: 0 !important;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.services-cinematic[data-service-preview] .service-row[data-active="true"],
+.services-cinematic[data-service-preview] .service-image[data-active="true"] {
+  opacity: 1 !important;
+}

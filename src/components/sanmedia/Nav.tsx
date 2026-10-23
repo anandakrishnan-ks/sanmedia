@@ -1,93 +1,109 @@
-import { useEffect, useRef, useState } from "react";
-import markWhite from "@/assets/sanmedia-mark-white.png.asset.json";
+"use client";
 
-const LINKS = [
-  { label: "Work", target: "work" },
-  { label: "Services", target: "services" },
-  { label: "Process", target: "story" },
-  { label: "About", target: "about" },
-  { label: "Contact", target: "contact" },
-];
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ArrowUpRight } from "lucide-react";
+import { Brand } from "./Brand";
+import { Modal } from "./Modal";
+import { email, location, navigation } from "@/content/site";
 
-export function Nav() {
-  const [scrolled, setScrolled] = useState(false);
+function MobileNavigation({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.9);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const desktop = window.matchMedia("(min-width: 900px)");
+    const dismiss = () => {
+      if (desktop.matches) setOpen(false);
+    };
+    desktop.addEventListener("change", dismiss);
+    return () => desktop.removeEventListener("change", dismiss);
   }, []);
 
-  const go = (id: string) => {
-    setOpen(false);
-    const lenis = (window as unknown as { __lenis?: { scrollTo: (t: Element, o?: object) => void } }).__lenis;
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (lenis) lenis.scrollTo(el, { duration: 1.6 });
-    else el.scrollIntoView({ behavior: "smooth" });
-  };
+  return (
+    <div className="mobile-navigation">
+      <button
+        className="menu-toggle meta"
+        type="button"
+        aria-expanded={open}
+        aria-controls="navigation-dialog"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        Menu
+        <span className="menu-glyph" aria-hidden="true">
+          <i />
+          <i />
+        </span>
+      </button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        id="navigation-dialog"
+        label="Navigation"
+        className="menu-modal"
+      >
+        <div className="menu-content">
+          <Brand onClick={() => setOpen(false)} />
+          <p className="meta menu-eyebrow">A different kind of production house.</p>
+          <nav className="menu-links" aria-label="Mobile">
+            {navigation.map((item, index) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
+                onClick={() => setOpen(false)}
+                style={{ "--menu-index": index } as React.CSSProperties}
+              >
+                <span className="meta menu-number">{item.number}</span>
+                <span className="display menu-label">{item.label}</span>
+                <ArrowUpRight aria-hidden="true" strokeWidth={1} />
+              </Link>
+            ))}
+          </nav>
+          <div className="menu-footer">
+            <a href={`mailto:${email}`}>
+              {email}
+              <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+            <span className="meta">{location}</span>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+export function Nav() {
+  const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 24);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 mix-blend-difference text-[#f5f4f0] transition-[padding] duration-700 ${
-        scrolled ? "py-4" : "py-7"
-      }`}
-    >
-      <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 lg:px-12">
-        <button
-          onClick={() => go("top")}
-          className="flex items-center gap-3"
-          aria-label="SANMEDIA — back to top"
-        >
-          <img
-            src={markWhite.url}
-            alt=""
-            width={30}
-            height={30}
-            className="h-7 w-7 object-contain"
-          />
-          <span className="display text-lg tracking-[0.08em]">SANMEDIA</span>
-        </button>
-
-        <nav className="hidden items-center gap-9 md:flex" aria-label="Primary">
-          {LINKS.map((l) => (
-            <button
-              key={l.target}
-              onClick={() => go(l.target)}
-              className="meta text-[10px] text-[#f5f4f0]/80 transition-colors hover:text-[#f5f4f0]"
+    <header className="site-header" data-scrolled={scrolled}>
+      <div className="header-inner site-container">
+        <Brand />
+        <nav aria-label="Primary" className="desktop-navigation">
+          {navigation.map((item) => (
+            <Link
+              className={`nav-link meta ${item.href === "/contact" ? "nav-contact" : ""}`}
+              key={item.href}
+              href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
             >
-              {l.label}
-            </button>
+              {item.label}
+              {item.href === "/contact" && <ArrowUpRight size={15} aria-hidden="true" />}
+            </Link>
           ))}
         </nav>
-
-        <button
-          className="meta text-[10px] md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-        >
-          {open ? "Close" : "Menu"}
-        </button>
+        <MobileNavigation key={pathname} pathname={pathname} />
       </div>
-
-      {open && (
-        <nav
-          className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 bg-background/95 backdrop-blur-sm"
-          aria-label="Mobile"
-        >
-          {LINKS.map((l) => (
-            <button
-              key={l.target}
-              onClick={() => go(l.target)}
-              className="display text-4xl text-foreground"
-            >
-              {l.label}
-            </button>
-          ))}
-        </nav>
-      )}
     </header>
   );
 }
